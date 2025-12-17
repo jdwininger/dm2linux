@@ -13,6 +13,6 @@ rm -f "$TARBALL"
 git archive --format=tar --prefix=${PKG}-${VER}/ HEAD | gzip > "$TARBALL"
 
 echo "Building RPM with rpmbuild -ta $TARBALL"
-rpmbuild -ta "$TARBALL"
+rpmbuild -ta "$TARBALL" --define "_topdir ${HOME}/rpmbuild"
 
 echo "RPM build complete. Check ~/rpmbuild/RPMS/ for generated packages."
