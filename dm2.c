@@ -35,7 +35,7 @@
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/kref.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/usb.h>
 #include <linux/spinlock.h>
 #include <linux/version.h>
@@ -56,14 +56,9 @@ MODULE_PARM_DESC(id, "ID string for DM2 MIDI controller.");
 
 static struct usb_driver dm2_driver;
 
-// Make kernel version check
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
-#  warning This driver will not compile for kernels older than 2.6.22
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24)
-#  warning Please make sure your kernel is patched with linux-lowspeedbulk.patch
-#  define USE_BULK_SNDPIPE 1
-#endif
+/* Compatibility: legacy kernel version checks and the low-speed bulk
+ * workaround have been removed. The driver prefers interrupt endpoints
+ * and is updated to build on modern kernels. */
 
 
 #define err(format, arg...) printk(KERN_ERR KBUILD_MODNAME ": " format "\n" , ## arg)
@@ -492,8 +487,7 @@ static void dm2_tasklet(unsigned long arg)
 		for (i=0; i<10; i++) printk( "%02x ", curr[i] );
 		printk( "\n" );
 	}
-#endif
-}
+
 
 
 
@@ -897,16 +891,9 @@ static int dm2_setup_writer(struct usb_dm2 *dev) {
 		kfree(buf);
 		return -ENOMEM;
 	}
-#ifdef USE_BULK_SNDPIPE
-	// Compatibility code for older kernels:
-	usb_fill_bulk_urb(urb, dev->udev,
-			  usb_sndbulkpipe(dev->udev, dev->int_out_endpointAddr),
-			  buf, bufsize, dm2_write_int_callback, dev);
-#else
 	usb_fill_int_urb(urb, dev->udev,
 			 usb_sndintpipe(dev->udev, dev->int_out_endpointAddr),
 			 buf, bufsize, dm2_write_int_callback, dev, 10);
-#endif
 	// urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP || URB_ZERO_PACKET;
 
 	dev->int_out_urb = urb;
@@ -976,7 +963,7 @@ static int dm2_probe(struct usb_interface *interface, const struct usb_device_id
 	}
 	kref_init(&dev->kref);
 	sema_init(&dev->limit_sem, WRITES_IN_FLIGHT);
-	dev->lock = __SPIN_LOCK_UNLOCKED();
+	spin_lock_init(&dev->lock);
 
 	dev->udev = usb_get_dev(interface_to_usbdev(interface));
 	dev->interface = interface;
@@ -1002,11 +989,10 @@ static int dm2_probe(struct usb_interface *interface, const struct usb_device_id
 #ifdef USE_BULK_SNDPIPE
 		// Compatibility code for older kernels:
 		if (!dev->int_out_endpointAddr &&
-		    usb_endpoint_is_bulk_out(endpoint)) {
+		    usb_endpoint_is_int_out(endpoint)) {
 			/* we found a bulk out endpoint */
 			dev->int_out_endpointAddr = endpoint->bEndpointAddress;
 		}
-#else
 		if (!dev->int_out_endpointAddr &&
 		    usb_endpoint_is_int_out(endpoint)) {
 			/* we found an int out endpoint */

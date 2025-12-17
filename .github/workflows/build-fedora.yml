@@ -1,0 +1,50 @@
+name: Build kernel module on Fedora
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-fedora:
+    name: Build on Fedora ${{ matrix.fedora }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        fedora: [37, 38, 39, 40]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build in Fedora container
+      id: build
+      run: |
+        set -euo pipefail
+        echo "Building in fedora:${{ matrix.fedora }}"
+        docker run --rm -v "$GITHUB_WORKSPACE":/work -w /work fedora:${{ matrix.fedora }} bash -lc '
+          set -euo pipefail
+          echo "dnf upgrade (might fail if lock held)" || true
+          dnf -y upgrade || true
+          dnf -y install make gcc rpm-build kernel-devel kernel-headers elfutils-libelf-devel bc bison flex rpmdevtools || true
+          echo "Starting make"
+          make || (echo "make failed" && ls -la && exit 1)
+          echo "Build complete"
+        '
+
+    - name: Upload dm2.ko artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: dm2-ko-fedora-${{ matrix.fedora }}
+        path: dm2.ko
+        retention-days: 7
+
+    - name: Upload build log
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log-fedora-${{ matrix.fedora }}
+        path: |
+          build.log
+        retention-days: 7

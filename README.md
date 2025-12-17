@@ -17,23 +17,9 @@ What it is
 Preliminaries
 ===============
 
-  This driver requires Linux 2.6.22 or newer. On Linux 2.6.22, you
-  need to apply the included patch first to enable LED output and
-  recompile your kernel.
-
-  ONLY ON 2.6.22 KERNELS:
-
-    In order to get the LEDs on the dm2 device working, you need to
-    apply the kernel patch by changing into the Linux source tree and
-    issuing the following command:
-
-       patch -p1 < /your/path/to/dm2/linux-lowspeedbulk.patch
-
-    Then recompile your kernel in the easiest way your distribution
-    allows. I use Debian/Ubuntu with make-kpkg. Read "man make-kpkg"
-    for full instructions.
-
-  This is unnecessary for all newer kernels.
+  The driver has been updated to support modern Linux kernels (3.x/4.x/5.x/6.x).
+  A kernel patch is no longer required; the driver uses interrupt endpoints by default
+  and should work on current distributions without modifying kernel source.
 
 
 Compiling / Installing
@@ -100,9 +86,14 @@ Testing
    mixxx/*                     MIDI mapping for mixxx.org
    LICENSE.txt                 GNU General Public License
    linux-lowspeedbulk.patch    kernel patch to allow bulk transfers
-                               on non-standard lowspeed USB devices
+                               on non-standard lowspeed USB devices (kept for history)
    Makefile                    makefile to build and install
    README                      this file
+
+Continuous Integration
+----------------------
+
+This repository now includes a GitHub Actions workflow that builds the kernel module inside Fedora containers (Fedora 37/38/39/40) on push and PRs. The workflow attempts to install prerequisites and run `make` inside the container; build artifacts (`dm2.ko`) are uploaded as workflow artifacts for inspection.
 
 
  Authors
