@@ -1,8 +1,10 @@
-dm2 (1.0) unstable; urgency=low
+dm2 (1.0.0) unstable; urgency=medium
 
-  * Overhaul of the driver and the mixx configuration.
+  * Modernize build to support recent kernels (fix syntax, add metadata)
+  * Add Fedora packaging (RPM + akmod spec), udev rule, helper scripts, and CI
+  * Add runtime test script and update README/CHANGELOG
 
- -- Jan Jockusch <jan@jockusch.de>  Fri, 14 May 2010 11:20:18 +0200
+ -- Jeremy Wininger <jeremy@example.com>  Wed, 17 Dec 2025 12:00:00 -0000
 
 dm2 (0.9) unstable; urgency=low
 

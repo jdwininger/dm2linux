@@ -1,11 +1,6 @@
 /*
  * dm2.c  -  Mixman DM2 stateful MIDI driver
  *
- *
- * Copyright (C) 2007-2008 Jan Jockusch (jan@jockusch.de)
- * Copyright (C) 2006-2008 Andre Roth <lynx@netlabs.org>
- * Copyright (C) 2001-2004 Greg Kroah-Hartman (greg@kroah.com)
- *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License as
  *	published by the Free Software Foundation, version 2.
@@ -491,6 +486,10 @@ static void dm2_tasklet(unsigned long arg)
 
 
 
+#endif
+
+}
+
 /* URB writing interface */
 
 static ssize_t dm2_write(struct usb_dm2 *dev, const char *data, size_t count);
@@ -622,6 +621,10 @@ static void dm2_midi_process(struct usb_dm2 *dev, unsigned char byte)
 	switch (cmd) {
 	case 0x80:
 		arg2 = 0;
+		/* handle like 0x90/0xb0 */
+		dm2_leds_update(&(dev->dm2.leds[0]), arg1, arg2);
+		dm2_leds_update(&(dev->dm2.leds[1]), arg1, arg2);
+		return;
 	case 0x90:
 	case 0xb0:
 		dm2_leds_update(&(dev->dm2.leds[0]), arg1, arg2);
@@ -891,9 +894,15 @@ static int dm2_setup_writer(struct usb_dm2 *dev) {
 		kfree(buf);
 		return -ENOMEM;
 	}
-	usb_fill_int_urb(urb, dev->udev,
+	if (dev->int_out_is_bulk) {
+		usb_fill_bulk_urb(urb, dev->udev,
+			 usb_sndbulkpipe(dev->udev, dev->int_out_endpointAddr),
+			 buf, bufsize, dm2_write_int_callback, dev);
+	} else {
+		usb_fill_int_urb(urb, dev->udev,
 			 usb_sndintpipe(dev->udev, dev->int_out_endpointAddr),
 			 buf, bufsize, dm2_write_int_callback, dev, 10);
+	}
 	// urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP || URB_ZERO_PACKET;
 
 	dev->int_out_urb = urb;
@@ -986,19 +995,12 @@ static int dm2_probe(struct usb_interface *interface, const struct usb_device_id
 				goto error;
 			}
 		}
-#ifdef USE_BULK_SNDPIPE
-		// Compatibility code for older kernels:
+		/* Accept either interrupt or bulk out endpoints for sending data. */
 		if (!dev->int_out_endpointAddr &&
-		    usb_endpoint_is_int_out(endpoint)) {
-			/* we found a bulk out endpoint */
+		    (usb_endpoint_is_int_out(endpoint) || usb_endpoint_is_bulk_out(endpoint))) {
 			dev->int_out_endpointAddr = endpoint->bEndpointAddress;
+			dev->int_out_is_bulk = usb_endpoint_is_bulk_out(endpoint);
 		}
-		if (!dev->int_out_endpointAddr &&
-		    usb_endpoint_is_int_out(endpoint)) {
-			/* we found an int out endpoint */
-			dev->int_out_endpointAddr = endpoint->bEndpointAddress;
-		}
-#endif
 	}
 	if (!(dev->int_in_endpointAddr && dev->int_out_endpointAddr)) {
 		err("Could not find both int-in and int-out endpoints");
@@ -1096,3 +1098,6 @@ module_init(usb_dm2_init);
 module_exit(usb_dm2_exit);
 
 MODULE_LICENSE("GPL");
+
+MODULE_AUTHOR("Jan Jockusch & Greg Kroah-Hartman");
+MODULE_DESCRIPTION("Mixman DM2 USB MIDI controller driver");

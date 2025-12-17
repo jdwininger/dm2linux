@@ -78,6 +78,61 @@ Testing
   additional info, you can read "/var/log/messages" or the "dmesg"
   output.
 
+Runtime & Troubleshooting
+=========================
+
+  - Ensure ALSA raw MIDI support is available and loaded on the host. On many
+    distributions it's autoloaded; if not, run:
+
+      sudo modprobe snd snd_rawmidi
+
+  - This driver supports devices where the DM2 presents an Interrupt IN
+    endpoint (for status/inputs) and either an Interrupt OUT or a Bulk OUT
+    endpoint for LED/output data. The driver will prefer interrupt OUT but
+    will detect and use a bulk OUT endpoint if that's what's reported by
+    the device.
+
+  - Quick runtime checklist (with device plugged in):
+
+      sudo dmesg | tail -n 40        # confirm device attach and driver messages
+      aconnect -i                    # list ALSA midi clients
+      amidi -l                       # list raw midi devices
+
+  - Example: send a Note-On to the device (replace hw:2,1 with the device
+    reported by amidi):
+
+      amidi -p hw:2,1 -S '90 3C 7F'
+
+  - If LEDs do not update on older kernels, the historical file
+    `linux-lowspeedbulk.patch` documents a kernel patch that used to be
+    required; modern kernels should not need it for correct operation.
+
+Udev rule and runtime test script
+---------------------------------
+
+  - A udev rule is included in `debian/udev/99-dm2.rules` which sets device
+    permissions (group=audio) and creates the symlink `/dev/dm2<busnum>` on
+    device addition. To install it manually:
+
+      sudo cp debian/udev/99-dm2.rules /etc/udev/rules.d/99-dm2.rules
+      sudo udevadm control --reload
+      sudo udevadm trigger
+
+  - A small test script is provided at `tools/check-dm2.sh`. It performs a
+    simple runtime check (lsusb -> amidi -> send test MIDI message). Run it
+    as your normal user (it will return failure codes for missing dependencies
+    or if the device isn't found):
+
+      ./tools/check-dm2.sh
+
+    Fedora / RHEL
+    -------------
+
+    For Fedora and RHEL users there are helper scripts and a spec file in
+    `fedora/` and `scripts/fedora/`. See `FEDORA.md` for instructions to build
+    an RPM or install locally using `./scripts/fedora/install_on_fedora.sh`.
+
+
 
  Files
 
@@ -100,3 +155,6 @@ This repository now includes a GitHub Actions workflow that builds the kernel mo
 
    Andre Roth   <lynx@netlabs.org>
    Jan Jockusch <jan@jockusch.de>
+
+   modren linux fork
+   Jeremy Wininger <jdwininger@gmail.com>
