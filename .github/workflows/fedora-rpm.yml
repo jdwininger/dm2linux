@@ -1,0 +1,38 @@
+name: Fedora RPM & Akmod build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-package:
+    name: Build RPMs (Fedora container)
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:38
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          dnf -y update || true
+          dnf -y install rpm-build rpmdevtools make gcc kernel-devel kernel-headers rpmdevtools akmods kmod createrepo_c || true
+
+      - name: Build kernel module (sanity)
+        run: make -j$(nproc)
+
+      - name: Build RPM (dm2.spec)
+        run: |
+          ./scripts/fedora/build_rpm.sh
+
+      - name: Build akmod RPM
+        run: ./scripts/fedora/build_akmod_rpm.sh
+
+      - name: Collect RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-rpms
+          path: ${{ github.workspace }}/rpmbuild/RPMS/**/*.rpm

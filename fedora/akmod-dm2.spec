@@ -29,10 +29,13 @@ rm -rf %{buildroot}
 # simple and avoids kmod build macros in this template.
 mkdir -p %{buildroot}/usr/src/akmods/%{name}-%{version}
 cp -a * %{buildroot}/usr/src/akmods/%{name}-%{version}/
+mkdir -p %{buildroot}%{_sysconfdir}/udev/rules.d
+install -m 0644 debian/udev/99-dm2.rules %{buildroot}%{_sysconfdir}/udev/rules.d/99-dm2.rules
 
 %files
 %defattr(-,root,root,-)
 /usr/src/akmods/%{name}-%{version}
+%config(noreplace) %{_sysconfdir}/udev/rules.d/99-dm2.rules
 %doc README FEDORA.md
 
 %post
