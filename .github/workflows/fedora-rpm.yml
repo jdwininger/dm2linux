@@ -19,7 +19,7 @@ jobs:
       - name: Install build tools
         run: |
           dnf -y update || true
-          dnf -y install rpm-build rpmdevtools make gcc kernel-devel kernel-headers rpmdevtools akmods kmod createrepo_c || true
+          dnf -y install rpm-build rpmdevtools make gcc kernel-devel kernel-headers rpmdevtools akmods kmod createrepo_c git || true
 
       - name: Build RPM (dm2.spec)
         run: |
