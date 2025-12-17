@@ -11,7 +11,18 @@ build and install, simply run:
 To build with make-kpkg and install manually please consult the documentation
 of dpkg (manpage) and kernel-package.
 
-IMPORTANT: In order to get the LEDs on the dm2 device working, you need to
-patch your kernel with the linux-lowspeedbulk.patch.
+IMPORTANT (modern kernels): In order to get the LEDs on the dm2 device
+working you usually do not need to patch your kernel; current kernels
+already support the interrupt-in + bulk-out configurations used by the
+DM2. The historical `linux-lowspeedbulk.patch` is kept for reference only.
+
+If you run into issues with LEDs not updating, ensure ALSA raw MIDI support
+is available (the driver uses `snd_rawmidi`):
+
+    sudo modprobe snd snd_rawmidi
+
+Then plug the device in and check `dmesg` and `amidi -l` for device
+presence. If you still see problems on very old kernels, the `linux-lowspeedbulk.patch`
+documents a kernel-side workaround.
 
  -- Andre Roth <lynx@netlabs.org>  Fri Apr 18 14:09:15 +0200

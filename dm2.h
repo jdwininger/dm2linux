@@ -300,6 +300,7 @@ struct usb_dm2 {
 	size_t			int_in_size;		/* the size of the receive buffer */
 	__u8			int_in_endpointAddr;	/* the address of the int in endpoint */
 	__u8			int_out_endpointAddr;	/* the address of the int/bulk out endpoint */
+	int			int_out_is_bulk;    /* non-zero if out endpoint is bulk */
 	int			output_failed;		/* flag which indicates an unpatched kernel */
 	struct kref		kref;
 	struct urb		*int_in_urb;
