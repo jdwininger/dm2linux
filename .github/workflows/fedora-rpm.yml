@@ -19,10 +19,7 @@ jobs:
       - name: Install build tools
         run: |
           dnf -y update || true
-          dnf -y install rpm-build rpmdevtools make gcc kernel-devel kernel-headers rpmdevtools akmods kmod createrepo_c || true
-
-      - name: Build kernel module (sanity)
-        run: make -j$(nproc)
+          dnf -y install rpm-build rpmdevtools make gcc kernel-devel kernel-headers rpmdevtools akmods kmod createrepo_c git || true
 
       - name: Build RPM (dm2.spec)
         run: |
@@ -31,8 +28,11 @@ jobs:
       - name: Build akmod RPM
         run: ./scripts/fedora/build_akmod_rpm.sh
 
+      - name: List rpmbuild output for debug
+        run: ls -R /root/rpmbuild || true
+
       - name: Collect RPM artifacts
         uses: actions/upload-artifact@v4
         with:
           name: fedora-rpms
-          path: ${{ github.workspace }}/rpmbuild/RPMS/**/*.rpm
+          path: /root/rpmbuild/RPMS/**/*.rpm

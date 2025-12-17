@@ -9,7 +9,8 @@ TARBALL=${PKG}-${VER}.tar.gz
 
 echo "Preparing source tarball for ${PKG}..."
 rm -f "$TARBALL"
-git archive --format=tar --prefix=${PKG}-${VER}/ HEAD | gzip > "$TARBALL"
+# Create a source tarball from the checked-out workspace (works in CI containers)
+tar --exclude='.git' --exclude='rpmbuild' --exclude="$TARBALL" -czf "$TARBALL" --transform "s,^,${PKG}-${VER}/," .
 
 echo "Building akmod RPM with rpmbuild -ta $TARBALL"
 rpmbuild -ta "$TARBALL" --define "_topdir ${HOME}/rpmbuild"
